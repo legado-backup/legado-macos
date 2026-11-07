@@ -372,6 +372,9 @@ struct SettingsView: View {
 }
 
 struct GeneralSettingsView: View {
+    @State private var motionPreview = false
+    @AppStorage("interfaceMotion") private var interfaceMotion = InterfaceMotion.lively.rawValue
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var preloadCountText: String
     @State private var showError = false
     @State private var errorMessage = ""
@@ -384,6 +387,21 @@ struct GeneralSettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("界面动效").font(.headline)
+                    Picker("动效主题", selection: $interfaceMotion) {
+                        ForEach(InterfaceMotion.allCases) { theme in
+                            Text(theme.title).tag(theme.rawValue)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    Button(motionPreview ? "再试一次" : "试试按钮动效") { motionPreview.toggle() }
+                        .buttonStyle(MotionButtonStyle(prominent: true))
+                    Text(reduceMotion ? "系统已开启减少动态效果，位移与过渡动画已关闭。" : "灵动：鲜明按压与页面位移 · 轻盈：柔和淡入 · 静止：关闭过渡")
+                        .font(.caption).foregroundColor(.secondary)
+                }
+                Divider()
+
                 // 阅读缓存
                 VStack(alignment: .leading, spacing: 12) {
                     Text("阅读缓存")

@@ -11,9 +11,23 @@ struct ReleaseNote: Identifiable {
 }
 
 enum AppReleaseInfo {
-    static let currentVersion = "2.0.5"
+    static let currentVersion = "2.0.6"
 
     static let notes: [ReleaseNote] = [
+        ReleaseNote(
+            version: "2.0.6",
+            date: "2026-11-07",
+            title: "订阅网页内置阅读与动效主题",
+            summary: "订阅网页可在应用内直接浏览，新增可切换的界面动效主题。",
+            changes: [
+                "单网页订阅直接展示网页，分类链接与文章原文支持应用内打开。",
+                "内置网页提供前进、后退、刷新、停止加载、真实进度与失败重试。",
+                "新增灵动、轻盈、静止三种动效主题，支持系统减少动态效果设置。",
+                "优化按钮悬停与按压反馈、页面切换、阅读工具栏和错误提示过渡。",
+                "改善文章行距与阅读宽度，收藏状态即时更新，正文提取期间防止重复操作。",
+                "内置网页使用系统网络配置，网页登录状态仅保留在当前会话；下载可使用外部浏览器。"
+            ]
+        ),
         ReleaseNote(
             version: "2.0.5",
             date: "2026-10-22",

@@ -3,6 +3,8 @@ import SwiftUI
 struct MainView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @AppStorage("interfaceMotion") private var motion = InterfaceMotion.lively.rawValue
+    private var motionTheme: InterfaceMotion { InterfaceMotion(rawValue: motion) ?? .lively }
     @State private var selectedTab = 0
     @State private var showSettings = false
     @Environment(\.openWindow) private var openWindow
@@ -40,7 +42,7 @@ struct MainView: View {
                     .padding(.vertical, 8)
                     .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(MotionButtonStyle())
                 .background(Color.clear)
                 .foregroundColor(.primary)
                 .padding(.horizontal, 4)
@@ -48,13 +50,12 @@ struct MainView: View {
             }
             .navigationTitle("Legado")
         } detail: {
-            detailView
+            ZStack {
+                detailView
                 .id(selectedTab)
-                .transition(reduceMotion ? .identity : .opacity)
-                .animation(
-                    reduceMotion ? nil : .easeOut(duration: 0.18),
-                    value: selectedTab
-                )
+                .transition(motionTheme.transition(reduce: reduceMotion))
+            }
+            .animation(motionTheme.animation(reduce: reduceMotion), value: selectedTab)
         }
         .sheet(isPresented: $appState.showImportBookSource) {
             ImportBookSourceView()

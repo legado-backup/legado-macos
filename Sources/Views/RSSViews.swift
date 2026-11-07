@@ -164,7 +164,8 @@ struct RSSSourceRow: View {
                     viewModel.toggleEnabled(source)
                 }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
+        .modifier(MotionHover())
     }
 
     private func formatDate(_ timestamp: Int64) -> String {
@@ -317,7 +318,8 @@ struct ArticleRow: View {
                     .frame(width: 8, height: 8)
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
+        .modifier(MotionHover())
     }
 
     private func formatDate(_ date: Date) -> String {
@@ -330,10 +332,11 @@ struct ArticleRow: View {
 /// 文章详情视图
 struct ArticleDetailView: View {
     let article: Article
-    let viewModel: ArticleListViewModel
+    @ObservedObject var viewModel: ArticleListViewModel
 
     @State private var content: String?
     @State private var isLoadingContent = false
+    @State private var showWebpage = false
 
     var body: some View {
         ScrollView {
@@ -356,34 +359,48 @@ struct ArticleDetailView: View {
                     Button {
                         viewModel.toggleFavorite(article)
                     } label: {
-                        Image(systemName: article.isFavorite ? "star.fill" : "star")
+                        Image(systemName: (viewModel.articles.first { $0.link == article.link }?.isFavorite ?? article.isFavorite) ? "star.fill" : "star")
                     }
+                    .buttonStyle(MotionButtonStyle())
+                    .help("切换收藏状态")
+                    .accessibilityLabel("切换收藏状态")
                 }
 
-                Divider()
+                Divider().padding(.vertical, 8)
 
                 // 内容
-                if let content = content {
+                if isLoadingContent {
+                    ProgressView("正在提取正文…").padding(.vertical, 16)
+                } else if let content = content {
                     Text(content)
                         .font(.body)
+                        .lineSpacing(6)
+                        .textSelection(.enabled)
                 } else if let description = article.description {
                     Text(description)
                         .font(.body)
+                        .lineSpacing(6)
+                        .textSelection(.enabled)
                         .foregroundColor(.secondary)
-                } else if isLoadingContent {
-                    ProgressView("加载内容中...")
+
                 } else {
-                    Text("点击下方按钮查看完整内容")
+                    Text("点击下方按钮，在应用内查看原文")
                         .font(.body)
+                        .lineSpacing(6)
+                        .textSelection(.enabled)
                         .foregroundColor(.secondary)
                 }
 
+                Button("应用内查看原文") { showWebpage = true }
+                    .buttonStyle(MotionButtonStyle(prominent: true))
+
                 // 查看原文按钮
-                if content == nil {
-                    Button("查看完整内容") {
+                if content == nil && viewModel.source?.hasContentRule == true {
+                    Button(isLoadingContent ? "正在提取…" : "提取正文") {
                         loadContent()
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(MotionButtonStyle())
+                    .disabled(isLoadingContent)
                 }
 
                 if let url = URL(string: article.link) {
@@ -391,8 +408,11 @@ struct ArticleDetailView: View {
                         .font(.caption)
                 }
             }
-            .padding()
+            .padding(28)
+            .frame(maxWidth: 800, alignment: .leading)
+            .frame(maxWidth: .infinity)
         }
+        .sheet(isPresented: $showWebpage) { SubscriptionWebSheet(url: article.link) }
         .navigationTitle("文章详情")
         .onAppear {
             viewModel.markAsRead(article)
@@ -509,13 +529,17 @@ struct SortUrlListView: View {
     let source: RSSSource
     let sortUrl: String
     @State private var categories: [(name: String, url: String)] = []
+    @State private var selectedPage: SelectedPage?
+
+    private struct SelectedPage: Identifiable {
+        let url: String
+        var id: String { url }
+    }
 
     var body: some View {
         List(categories, id: \.name) { category in
             Button(action: {
-                if let url = URL(string: category.url) {
-                    NSWorkspace.shared.open(url)
-                }
+                selectedPage = SelectedPage(url: category.url)
             }) {
                 HStack {
                     Image(systemName: "folder")
@@ -536,9 +560,14 @@ struct SortUrlListView: View {
                     Image(systemName: "arrow.up.right.square")
                         .foregroundColor(.secondary)
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, 10)
+                .padding(.horizontal, 8)
+                .modifier(MotionHover())
             }
             .buttonStyle(.plain)
+        }
+        .sheet(item: $selectedPage) { page in
+            SubscriptionWebSheet(url: page.url)
         }
         .onAppear {
             parseSortUrl()
@@ -576,30 +605,8 @@ struct WebContentView: View {
     let url: String
 
     var body: some View {
-        VStack(spacing: 30) {
-            Image(systemName: "globe")
-                .font(.system(size: 80))
-                .foregroundColor(.blue)
-
-            Text("此订阅源需要在浏览器中查看")
-                .font(.title2)
-                .foregroundColor(.primary)
-
-            Text(url)
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-
-            Button("在浏览器中打开") {
-                if let url = URL(string: url) {
-                    NSWorkspace.shared.open(url)
-                }
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        SubscriptionWebView(url: url)
+            .id(url)
     }
 }
 

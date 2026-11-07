@@ -41,6 +41,8 @@ struct ReaderView: View {
     @StateObject private var viewModel: ReaderViewModel
     @Environment(\.dismiss) var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @AppStorage("interfaceMotion") private var motion = InterfaceMotion.lively.rawValue
+    private var motionTheme: InterfaceMotion { InterfaceMotion(rawValue: motion) ?? .lively }
     @State private var showSettings = false
     @State private var showChapterList = false
     @State private var showBookmarks = false
@@ -146,12 +148,12 @@ struct ReaderView: View {
                         bottomToolbar
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .transition(reduceMotion ? .identity : .opacity)
+                    .transition(motionTheme.transition(reduce: reduceMotion))
                     .zIndex(1)
                 }
             }
             .animation(
-                reduceMotion ? nil : .easeOut(duration: 0.18),
+                motionTheme.animation(reduce: reduceMotion),
                 value: viewModel.showToolbar
             )
             
@@ -225,7 +227,7 @@ struct ReaderView: View {
         if reduceMotion {
             viewModel.showToolbar.toggle()
         } else {
-            withAnimation(.easeOut(duration: 0.18)) {
+            withAnimation(motionTheme.animation(reduce: reduceMotion)) {
                 viewModel.showToolbar.toggle()
             }
         }
@@ -302,6 +304,7 @@ struct ReaderView: View {
         }
         .padding()
         .background(.ultraThinMaterial)
+        .buttonStyle(MotionButtonStyle())
     }
     
     // 底部工具栏
